@@ -23,6 +23,8 @@ def process_musdb_dataset(musdb_path, save_dir):
     """Process and save stems from the MUSDB18 dataset."""
     # Load the MUSDB18 dataset
     mus = musdb.DB(root=musdb_path, is_wav=False)
+    print(f"Found {len(mus.tracks)} tracks in the dataset.")
+
     
     # Define stem names based on the MUSDB18 convention
     stem_names = ['mixture', 'drums', 'bass', 'other', 'vocals']
@@ -37,11 +39,11 @@ def process_musdb_dataset(musdb_path, save_dir):
         print(f"Processing {track.name} [{i}/{total_tracks}]...")
         stems = track.stems
         # Save each stem individually and transcribe to MIDI
-        for stem_idx, stem_name in enumerate(stem_names):
-            save_stem_and_transcribe(stems[stem_idx], stem_name, track.name, save_dir)
+        for stem_name in stem_names:
+            save_stem_and_transcribe(track.targets[stem_name].audio, stem_name, track.name, save_dir)
         print(f"Finished processing {track.name}")
 
 if __name__ == "__main__":
-    musdb_path = "/path/to/musdb"  # Adjust this to your MUSDB18 dataset root folder
-    save_dir = "stems"  # The directory where you want to save the stems and MIDI files
+    musdb_path = "../training_data/musdb18"  # MUSDB18 dataset root folder
+    save_dir = "../training_data/stems"  # The directory where you want to save the stems and MIDI files
     process_musdb_dataset(musdb_path, save_dir)
