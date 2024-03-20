@@ -24,16 +24,21 @@ def save_stem_and_transcribe(audio_data, stem_name, track_name, save_dir, rate):
         sample_rate=rate
     )
     
-    # Transcribe to MIDI
+    # Ensure MIDI output directory exists
     midi_output_dir = Path(save_dir, stem_name, "midi")
     safe_make_directory(midi_output_dir)
-    predict_and_save(str(midi_output_dir),
-                     str(stem_path),
-                     save_midi=True,
-                     sonify_midi=False,
-                     save_model_outputs=False,
-                     save_notes=False
+    
+    # Transcribe to MIDI (make sure to pass the file path, not the directory)
+    print(f"Transcribing to MIDI: {stem_path}")  # Debugging print
+    predict_and_save(
+        input_audio_path_list=[str(stem_path)],  # This should be a list of audio file paths
+        output_directory=str(midi_output_dir),  # This is the output directory where the MIDI files will be saved
+        save_midi=True,
+        sonify_midi=False,
+        save_model_outputs=False,
+        save_notes=False
     )
+
 
 def process_musdb_dataset(musdb_path, save_dir):
     """Process and save stems from the MUSDB18 dataset."""
