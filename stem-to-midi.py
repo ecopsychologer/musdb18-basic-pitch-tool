@@ -42,31 +42,40 @@ def update_log_from_existing_midi_files(output_dir, log_path):
     return processed_tracks
 
 
-def save_stem_and_transcribe(audio_data, stem_name, track_name, save_dir, rate, processed_tracks, log_path):
+def save_stem_and_transcribe(audio_data, stem_name, track_name, save_dir, rate, log_path):
     """Save a single stem audio to the disk and transcribe it to MIDI."""
     filename_base = f"{track_name.replace('/', '-')}_{stem_name}"
     stem_path = Path(save_dir, stem_name, f"{filename_base}.wav")
-        # Ensure MIDI output directory exists
     midi_output_dir = Path(save_dir, stem_name, "midi")
-    safe_make_directory(midi_output_dir)
+    midi_file_path = midi_output_dir / f"{filename_base}_basic_pitch.mid"  # Update to your naming convention
 
-
-    update_log_from_existing_midi_files(midi_output_dir, log_path)
-
-    # Check if this stem has already been processed
-    if filename_base in processed_tracks:
+    # Check directly if the MIDI file exists to decide on processing
+    if midi_file_path.exists():
         print(f"Skipping already processed track: {filename_base}")
         return
-    
+
     # Ensure directory exists
     safe_make_directory(stem_path.parent)
+    safe_make_directory(midi_output_dir)
     
     # Save stem
-    stempeg.write_audio(
-        path=str(stem_path),
-        data=audio_data,
-        sample_rate=rate
-    )
+    stempeg.write_audio(path=str(stem_path), data=audio_data, sample_rate=rate)
+    
+    print(f"Transcribing to MIDI: {stem_path}")  # Debugging print
+    try:
+        predict_and_save(
+            [str(stem_path)],  # Correctly pass the list of audio file paths
+            output_directory=str(midi_output_dir),  # Output directory for the MIDI files
+            save_midi=True,
+            sonify_midi=False,
+            save_model_outputs=False,
+            save_notes=False
+        )
+        log_processed_track(log_path, filename_base)  # Log successful processing
+    except Exception as e:
+        print(f"Error during transcription: {e}")
+
+    gc.collect()
 
     
     print(f"Transcribing to MIDI: {stem_path}")  # Debugging print
@@ -91,7 +100,6 @@ def process_musdb_dataset(musdb_path, save_dir):
     print(f"Found {len(mus.tracks)} tracks in the dataset.")
     
     log_path = "processed_tracks.log"  # Path to your log file
-    processed_tracks = load_processed_tracks(log_path)
     
     stem_names = ['mixture', 'drums', 'bass', 'other', 'vocals']
     for name in stem_names:
@@ -108,7 +116,6 @@ def process_musdb_dataset(musdb_path, save_dir):
                     track.name,
                     save_dir,
                     track.rate,
-                    processed_tracks,
                     log_path
                 )
         print(f"Finished processing {track.name}")
