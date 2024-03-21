@@ -2,6 +2,20 @@ import os, gc, tqdm, musdb, stempeg
 from pathlib import Path
 from basic_pitch.inference import predict_and_save
 
+import tensorflow as tf
+gpus = tf.config.experimental.list_physical_devices('GPU')
+if gpus:
+    try:
+        # Currently, memory growth needs to be the same across GPUs
+        for gpu in gpus:
+            tf.config.experimental.set_memory_growth(gpu, True)
+        logical_gpus = tf.config.experimental.list_logical_devices('GPU')
+        print(len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
+    except RuntimeError as e:
+        # Memory growth must be set before GPUs have been initialized
+        print(e)
+
+
 def safe_make_directory(path):
     """Safely create a directory if it doesn't already exist."""
     Path(path).mkdir(parents=True, exist_ok=True)
