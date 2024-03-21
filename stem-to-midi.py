@@ -18,6 +18,28 @@ def log_processed_track(log_path, track_name):
     with open(log_path, 'a') as log_file:
         log_file.write(f"{track_name}\n")
 
+def update_log_from_existing_midi_files(output_dir, log_path):
+    """Scan the output directory for existing MIDI files and update the log."""
+    processed_tracks = set()
+    midi_files = Path(output_dir).rglob("*.midi")  # Adjust the glob pattern if necessary
+    
+    for midi_file in midi_files:
+        # Extract track and stem name from the MIDI file path
+        # This depends on your directory structure and naming convention
+        parts = midi_file.relative_to(output_dir).parts
+        if len(parts) >= 3:  # ['stem_name', 'midi', 'track_name_stem_name.midi']
+            stem_name = parts[0]
+            track_name = parts[2].split('_')[0]
+            processed_tracks.add(f"{track_name}_{stem_name}")
+    
+    # Update log file with processed tracks
+    with open(log_path, 'w') as log_file:
+        for track in processed_tracks:
+            log_file.write(f"{track}\n")
+    
+    return processed_tracks
+
+
 def save_stem_and_transcribe(audio_data, stem_name, track_name, save_dir, rate, processed_tracks, log_path):
     """Save a single stem audio to the disk and transcribe it to MIDI."""
     filename_base = f"{track_name.replace('/', '-')}_{stem_name}"
@@ -55,7 +77,7 @@ def save_stem_and_transcribe(audio_data, stem_name, track_name, save_dir, rate, 
         log_processed_track(log_path, filename_base)  # Log successful processing
     except Exception as e:
         print(f"Error during transcription: {e}")
-        
+
     gc.collect()
 
 def process_musdb_dataset(musdb_path, save_dir):
@@ -65,6 +87,7 @@ def process_musdb_dataset(musdb_path, save_dir):
     
     log_path = "processed_tracks.log"  # Path to your log file
     processed_tracks = load_processed_tracks(log_path)
+    update_log_from_existing_midi_files(save_dir, log_path)
     
     stem_names = ['mixture', 'drums', 'bass', 'other', 'vocals']
     for name in stem_names:
