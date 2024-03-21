@@ -21,7 +21,7 @@ def log_processed_track(log_path, track_name):
 def update_log_from_existing_midi_files(output_dir, log_path):
     """Scan the output directory for existing MIDI files and update the log."""
     processed_tracks = set()
-    midi_files = Path(output_dir).rglob("*.midi")  # Adjust the glob pattern if necessary
+    midi_files = Path(output_dir).rglob("*.mid")
     
     for midi_file in midi_files:
         # Extract track and stem name from the MIDI file path
@@ -31,11 +31,13 @@ def update_log_from_existing_midi_files(output_dir, log_path):
             stem_name = parts[0]
             track_name = parts[2].split('_')[0]
             processed_tracks.add(f"{track_name}_{stem_name}")
+            print(f"Logging processed midi stem: {track_name}_{stem_name}")
     
     # Update log file with processed tracks
     with open(log_path, 'w') as log_file:
         for track in processed_tracks:
             log_file.write(f"{track}\n")
+            print(f"Successfully logged processed track: {track}")
     
     return processed_tracks
 
@@ -44,6 +46,12 @@ def save_stem_and_transcribe(audio_data, stem_name, track_name, save_dir, rate, 
     """Save a single stem audio to the disk and transcribe it to MIDI."""
     filename_base = f"{track_name.replace('/', '-')}_{stem_name}"
     stem_path = Path(save_dir, stem_name, f"{filename_base}.wav")
+        # Ensure MIDI output directory exists
+    midi_output_dir = Path(save_dir, stem_name, "midi")
+    safe_make_directory(midi_output_dir)
+
+
+    update_log_from_existing_midi_files(midi_output_dir, log_path)
 
     # Check if this stem has already been processed
     if filename_base in processed_tracks:
@@ -59,10 +67,7 @@ def save_stem_and_transcribe(audio_data, stem_name, track_name, save_dir, rate, 
         data=audio_data,
         sample_rate=rate
     )
-    
-    # Ensure MIDI output directory exists
-    midi_output_dir = Path(save_dir, stem_name, "midi")
-    safe_make_directory(midi_output_dir)
+
     
     print(f"Transcribing to MIDI: {stem_path}")  # Debugging print
     try:
@@ -87,7 +92,6 @@ def process_musdb_dataset(musdb_path, save_dir):
     
     log_path = "processed_tracks.log"  # Path to your log file
     processed_tracks = load_processed_tracks(log_path)
-    update_log_from_existing_midi_files(save_dir, log_path)
     
     stem_names = ['mixture', 'drums', 'bass', 'other', 'vocals']
     for name in stem_names:
